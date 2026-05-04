@@ -20,7 +20,7 @@
   --status-urgent-bg: #c0392b;
   --status-urgent-color: #fff;
   --status-urgent-notimportant-bg: #e07b3a;
-  --status-urgent-notimportant-color: #fff;
+  --status-urgent-notimportant-color: #000;
   --status-noturgent-important-bg: #d4a017;
   --status-noturgent-important-color: #5a3600;
   --status-normal-bg: #00796b;
@@ -90,6 +90,7 @@ html,body{background:var(--gray-bg);color:var(--dark);height:100vh;overflow:hidd
 .filter-btn.active{background:var(--green-dark);border-color:var(--green-dark);color:#fff;box-shadow:0 2px 8px rgba(26,92,58,.3);}
 .filter-btn.f-urgent.active{background:var(--status-urgent-bg);border-color:var(--status-urgent-bg);box-shadow:0 2px 8px rgba(192,57,43,.3);}
 .filter-btn.f-important.active{background:var(--status-urgent-notimportant-bg);border-color:var(--status-urgent-notimportant-bg);color:#fff;box-shadow:0 2px 8px rgba(224,123,58,.3);}
+.filter-btn.f-waiting.active{background:var(--status-noturgent-important-bg);border-color:var(--status-noturgent-important-bg);color:var(--status-noturgent-important-color);box-shadow:0 2px 8px rgba(212,160,23,.3);}
 .blink-dot{width:8px;height:8px;border-radius:50%;background:var(--status-urgent-bg);flex-shrink:0;}
 .filter-btn.active .blink-dot{background:#fff;}
 .filter-btn.f-important .blink-dot{background:var(--status-urgent-notimportant-bg);}
@@ -354,6 +355,7 @@ html,body{background:var(--gray-bg);color:var(--dark);height:100vh;overflow:hidd
       <span class="filter-label">Xem:</span>
       <button class="filter-btn f-urgent active" id="fb-urgent" onclick="setFilter(this,'urgent')"><span class="blink-dot"></span> Việc Gấp!</button>
       <button class="filter-btn f-important" id="fb-important" onclick="setFilter(this,'important')"><span class="blink-dot"></span> Quan Trọng</button>
+      <button class="filter-btn f-waiting" id="fb-waiting" onclick="setFilter(this,'waiting')"><span class="blink-dot" style="background:var(--status-noturgent-important-bg)"></span> Xin Chỉ Dạy</button>
       <button class="filter-btn" id="fb-all" onclick="setFilter(this,'all')">📋 Tất Cả Các Ban</button>
     </div>
     <div class="ban-filter-bar" id="banFilterBar">
@@ -375,10 +377,10 @@ html,body{background:var(--gray-bg);color:var(--dark);height:100vh;overflow:hidd
       <div class="bfb-chips" id="bfbChips"></div>
     </div>
     <div class="legend-row">
-      <div class="legend-item"><div class="lb lb-red"></div> Đỏ Khẩn Cấp</div>
-      <div class="legend-item"><div class="lb lb-orange"></div> Cam Quan Trọng</div>
-      <div class="legend-item"><div class="lb lb-yellow"></div> Vàng Xin Chỉ Dạy</div>
-      <div class="legend-item"><div class="lb lb-teal"></div> Xanh Bình Thường</div>
+      <div class="legend-item"><div class="lb lb-red"></div> Khẩn Cấp</div>
+      <div class="legend-item"><div class="lb lb-orange"></div> Quan Trọng</div>
+      <div class="legend-item"><div class="lb lb-yellow"></div> Xin Chỉ Dạy</div>
+      <div class="legend-item"><div class="lb lb-teal"></div> Bình Thường</div>
     </div>
     <div class="ban-area"><div id="banContainer"></div></div>
   </div>
@@ -948,9 +950,9 @@ const BANS_DATA = [
   { id:12, name:'Ban Tổ chức SK',     iconKey:'to-chuc-sk',   tasks:[] },
   { id:13, name:'Ban An sinh',        iconKey:'an-sinh',      tasks:[] },
   { id:33, name:'Ban Hỗ trợ CTV',     iconKey:'ho-tro-ctv',   tasks:[] },
-  { id:14, name:'Ban HD Phật tử',     iconKey:'huong-dan-pt', tasks:[] },
+  { id:14, name:'Ban HD Phật tử',     iconKey:'huong-dan-pt', tasks:[{ title:'Xin chỉ dạy về lịch sinh hoạt tháng 5', type:'waiting' }] },
   { id:15, name:'Ban Hương Đăng',     iconKey:'huong-dang',   tasks:[] },
-  { id:16, name:'Ban Nghi Lễ',        iconKey:'nghi-le',      tasks:[] },
+  { id:16, name:'Ban Nghi Lễ',        iconKey:'nghi-le',      tasks:[{ title:'Xin chỉ dạy về nghi thức lễ Phật Đản', type:'waiting' }] },
   { id:18, name:'Ban May',            iconKey:'may',          tasks:[] },
   { id:19, name:'Ban Y tế',           iconKey:'y-te',         tasks:[] },
   { id:20, name:'Ban Đời sống',       iconKey:'doi-song',     tasks:[] },
@@ -1021,6 +1023,7 @@ function renderChiTiet(filter) {
   let allBans = getFilteredBans(BANS_DATA);
   if (filter === 'urgent') allBans = allBans.filter(b=>b.tasks&&b.tasks.some(t=>t.type==='urgent'));
   else if (filter === 'important') allBans = allBans.filter(b=>b.tasks&&b.tasks.some(t=>t.type==='important'));
+  else if (filter === 'waiting') allBans = allBans.filter(b=>b.tasks&&b.tasks.some(t=>t.type==='waiting'));
   const allSorted = [...allBans].sort((a,b)=>(b.tasks&&b.tasks.length?1:0)-(a.tasks&&a.tasks.length?1:0));
   let html = `<div class="ban-grid-detail">`;
   allSorted.forEach(b => { html += buildDetailCard(b, filter); });
@@ -1032,8 +1035,10 @@ function getTopPriorityBadge(tasks) {
   if (!tasks || tasks.length === 0) return '';
   const uc = tasks.filter(t=>t.type==='urgent').length;
   const ic = tasks.filter(t=>t.type==='important').length;
+  const wc = tasks.filter(t=>t.type==='waiting').length;
   if (uc > 0) return `<div class="card-top-badge card-top-badge-red">🔴 ${uc} khẩn cấp</div>`;
-  if (ic > 0) return `<div class="card-top-badge card-top-badge-orange">📌 ${ic} quan trọng</div>`;
+  if (ic > 0) return `<div class="card-top-badge card-top-badge-orange">${ic} quan trọng</div>`;
+  if (wc > 0) return `<div class="card-top-badge card-top-badge-yellow">Xin Chỉ Dạy</div>`;
   return '';
 }
 
@@ -1041,6 +1046,7 @@ function buildDetailCard(b, filter) {
   let visibleTasks = b.tasks || [];
   if (filter === 'urgent') visibleTasks = visibleTasks.filter(t=>t.type==='urgent');
   else if (filter === 'important') visibleTasks = visibleTasks.filter(t=>t.type==='important');
+  else if (filter === 'waiting') visibleTasks = visibleTasks.filter(t=>t.type==='waiting');
   const badgeHtml = getTopPriorityBadge(b.tasks);
   let tasksHtml = '';
   if (visibleTasks.length > 0) {
