@@ -27,7 +27,8 @@
   --topbar-user-bg:rgba(255,255,255,0.5);
   --topbar-active-color:#5a2d00;--topbar-lunar-color:#8b4a00;
   --icon-color:#1a5c3a;--icon-bg:#f5f0e8;
-  --empty-card-h:72px;
+  /* FIX 1: chiều cao card trống */
+  --empty-card-h:118px;
 }
 html,body,input,select,textarea,button{font-family:var(--font);}
 html,body{background:var(--gray-bg);color:var(--dark);height:100vh;overflow:hidden;}
@@ -171,11 +172,14 @@ html,body{background:var(--gray-bg);color:var(--dark);height:100vh;overflow:hidd
 .card-top-badge-yellow{background:var(--status-noturgent-important-bg);color:var(--status-noturgent-important-color);}
 .card-top-badge-teal{background:var(--status-normal-bg);color:var(--status-normal-color);}
 
-.bcd-top{display:flex;align-items:center;gap:10px;padding:12px 110px 10px 12px;border-bottom:1px solid var(--gray-border);}
+/* FIX 2: giảm padding phải từ 110px xuống 88px để tên ban không bị xuống dòng */
+.bcd-top{display:flex;align-items:center;gap:10px;padding:12px 88px 10px 12px;border-bottom:1px solid var(--gray-border);}
 /* FIX: tên ban luôn hiện đủ, không bị cắt */
 .bcd-name{font-size:16px;font-weight:800;color:var(--dark);line-height:1.2;flex:1;word-break:break-word;overflow-wrap:break-word;white-space:normal;overflow:visible;text-overflow:clip;}
 .bcd-icon-wrap{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:var(--icon-bg);}
 .bcd-body{padding:10px 12px 4px;}
+/* ── SỬA 2: bcd-body trống cho card không có task ── */
+.bcd-body-empty{padding:10px 12px 4px;border-bottom:1px solid var(--gray-border);min-height:38px;}
 .bcd-task-item{display:flex;align-items:flex-start;gap:6px;padding:5px 0;border-bottom:1px solid #f0f2f5;}
 .bcd-task-item:last-child{border-bottom:none;}
 .task-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
@@ -582,6 +586,7 @@ function truncate60(str){
 }
 
 // ── DATA ──────────────────────────────────────────────────────
+// SỬA 1: đổi thứ tự Ban Vườn (id:32) lên trước Ban Thị Giả (id:29)
 const BANS_DATA=[
   {id:3,  name:'Ban Tri Sự',           iconKey:'tri-su',
     time:'48h trước',
@@ -629,10 +634,10 @@ const BANS_DATA=[
   {id:26, name:'Ban Trang Trí KT',     iconKey:'trang-tri',     tasks:[]},
   {id:27, name:'Ban Bảo Tàng',         iconKey:'bao-tang',      tasks:[]},
   {id:28, name:'Ban Thư Viện',         iconKey:'thu-vien',      tasks:[]},
+  {id:32, name:'Ban Vườn',             iconKey:'vuon',          tasks:[]},
   {id:29, name:'Ban Thị Giả',          iconKey:'thi-gia',       tasks:[]},
   {id:30, name:'Ban Tri Khố',          iconKey:'tri-kho',       tasks:[]},
   {id:31, name:'Ban An Ninh',          iconKey:'an-ninh',       tasks:[]},
-  {id:32, name:'Ban Vườn',             iconKey:'vuon',          tasks:[]},
 ];
 
 const NOTIFS_MAIN=[
@@ -676,15 +681,10 @@ function renderChiTiet(filter){
     list=list.filter(b=>b.tasks&&b.tasks.some(t=>t.type===filter));
   }
 
-  const bts=list.find(b=>b.id===3);
-  const qc=list.find(b=>b.id===4);
-  const rest=list.filter(b=>b.id!==3&&b.id!==4);
-
+  // FIX 3: phân cột đều - round-robin đơn giản, không ưu tiên ban nào
   const cols=[[],[],[]];
-  if(bts) cols[0].push(bts);
-  if(qc)  cols[1].push(qc);
   let ci=0;
-  rest.forEach(b=>{
+  list.forEach(b=>{
     cols[ci%3].push(b);
     ci++;
   });
@@ -715,10 +715,12 @@ function buildDetailCard(b,filter){
   const badge=getBadgeHtml(b);
   const timeStr=getBanTime(b);
 
+  // SỬA 2: card rỗng — thêm bcd-body-empty (có border-bottom) trước footer
   if(b.emptyBlank){
-    return`<div class="ban-card-detail card-empty" onclick="alert('Chi tiết: ${b.name}')">
+    return`<div class="ban-card-detail" onclick="alert('Chi tiết: ${b.name}')">
       ${badge}
       <div class="bcd-top">${getIconHTMLDetail(b.iconKey)}<div class="bcd-name">${b.name}</div></div>
+      <div class="bcd-body-empty"></div>
       <div class="bcd-footer"><span></span><span class="bcd-view-more">Xem thêm ${VM_SVG}</span></div>
     </div>`;
   }
@@ -727,9 +729,10 @@ function buildDetailCard(b,filter){
   if(filter!=='all')vis=vis.filter(t=>t.type===filter);
 
   if(vis.length===0){
-    return`<div class="ban-card-detail card-empty" onclick="alert('Chi tiết: ${b.name}')">
+    return`<div class="ban-card-detail" onclick="alert('Chi tiết: ${b.name}')">
       ${badge}
       <div class="bcd-top">${getIconHTMLDetail(b.iconKey)}<div class="bcd-name">${b.name}</div></div>
+      <div class="bcd-body-empty"></div>
       <div class="bcd-footer"><span></span><span class="bcd-view-more">Xem thêm ${VM_SVG}</span></div>
     </div>`;
   }
